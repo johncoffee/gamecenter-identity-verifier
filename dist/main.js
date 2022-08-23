@@ -1,9 +1,12 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.verify = exports.verifySignature = exports.convertTimestampToBigEndian = exports.getAppleCertificate = exports.convertX509CertToPEM = exports.SignatureValidationError = void 0;
-const https_1 = require("https");
 const crypto_1 = require("crypto");
-const cache = new Map();
+const node_fetch_1 = __importDefault(require("node-fetch"));
+const memCache = new Map();
 class SignatureValidationError extends Error {
     constructor(message) {
         super(message);
@@ -25,36 +28,32 @@ async function getAppleCertificate(url) {
     if (url.protocol !== 'https:') {
         throw new SignatureValidationError('Invalid publicKeyUrl: should use https');
     }
-    const cached = cache.get(url + '');
+    const cached = memCache.get(url + '');
     if (cached)
         return cached;
-    const [buffer, result] = await new Promise(resolve => {
-        (0, https_1.get)(url, (res) => {
-            if (res.statusCode !== 200)
-                throw new SignatureValidationError(`Request http status: ${res.statusCode} ${res.statusMessage}`);
-            let chunks = [];
-            res.on('data', chunk => chunks.push(chunk));
-            res.on('end', () => resolve([
-                Buffer.concat(chunks), res
-            ]));
-        })
-            .on('error', (e) => {
-            throw new SignatureValidationError(`getAppleCertificate: ${e.message}`);
-        });
+    const res = await (0, node_fetch_1.default)(url)
+        .catch(err => {
+        throw new SignatureValidationError(`getAppleCertificate: ${err.message}`);
     });
+    if (res.status !== 200)
+        throw new SignatureValidationError(`getAppleCertificate: ${res.status} ${res.statusText}`);
+    const buffer = await res.buffer();
+    if (buffer.length === 0)
+        throw new SignatureValidationError(`Empty response from ${url} - ${res.status} ${res.statusText}`);
     const b64 = buffer.toString('base64');
     const publicKey = convertX509CertToPEM(b64);
-    if (result.headers['cache-control']) {
+    const cacheHeader = res.headers.get('cache-control');
+    if (cacheHeader) {
         // if there's a cache-control header
-        const expireSec = result.headers['cache-control'].match(/max-age=([0-9]+)/);
+        const maxAgeSec = cacheHeader.match(/max-age=([0-9]+)/);
         // console.log(expireSec)
-        const parsed = (typeof expireSec?.[1] === 'string') ? parseInt(expireSec[1], 10) * 1000 : 0;
+        const parsed = (typeof maxAgeSec?.[1] === 'string') ? parseInt(maxAgeSec[1], 10) * 1000 : 0;
         // check parsed for falsy value, eg. null or zero
         if (parsed > 0) {
             // if we got max-age
-            cache.set(url.toString(), publicKey); //[url] = publicKey // save in cache
+            memCache.set(url.toString(), publicKey);
             // we'll expire the cache entry later, as per max-age
-            setTimeout(() => cache.delete(url.toString()), parsed).unref();
+            setTimeout(() => memCache.delete(url.toString()), parsed).unref();
         }
     }
     return publicKey;

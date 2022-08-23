@@ -31,22 +31,22 @@ describe('caching test', function () {
 
     const t0 = Date.now()
     await verifier.verify(testToken)
-    const firstRunDelay = Date.now() - t0
-    console.log(`First run time ${firstRunDelay}ms`)
-    this.timeout(firstRunDelay * 2)
+    const firstDelay = Date.now() - t0
+    console.log(`First run time ${firstDelay}ms`)
+    this.timeout(firstDelay * 2)
 
     const t1 = Date.now()
     let runs = 0
     const runsTarget = 50
 
-    console.log(`Caching should allow running at least ${runsTarget} times in ${firstRunDelay} when caching`)
+    console.log(`Caching should allow running at least ${runsTarget} times in ${firstDelay}ms when caching`)
     while (runs < runsTarget) {
       await verifier.verify(testToken)
       runs++
     }
 
-    console.log(`Ran ${runs} times in ${Date.now() - t1}ms`)
-    assert(runs >= runsTarget, `should be able to run ${runsTarget}ms when caching`)
+    console.log(`Ran ${runs} times in ${Date.now() - t1}ms, after caching pub key`)
+    assert(runs >= runsTarget, `should be able to run ${runsTarget} times when caching`)
   })
 })
 

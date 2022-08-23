@@ -1,6 +1,5 @@
-import { get } from 'https'
 import { createVerify } from 'crypto'
-import type { IncomingMessage } from 'http'
+import fetch from 'node-fetch'
 
 export type tokenInput = {
   publicKeyUrl: string,
@@ -11,10 +10,10 @@ export type tokenInput = {
   signature: string
 }
 
-const cache = new Map<string, string>()
+const memCache = new Map<string, string>()
 
 export class SignatureValidationError extends Error {
-  constructor(message:string) {
+  constructor (message: string) {
     super(message)
     this.name = 'SignatureValidationError'
   }
@@ -29,7 +28,7 @@ export function convertX509CertToPEM (base64: string) {
   return pemPreFix + certBody + pemPostFix
 }
 
-export async function getAppleCertificate (url: URL) {
+export async function getAppleCertificate (url: URL): Promise<string> {
   if (!url.host.endsWith('.apple.com')) {
     throw new SignatureValidationError('Invalid publicKeyUrl: host should be apple.com')
   }
@@ -39,41 +38,37 @@ export async function getAppleCertificate (url: URL) {
     )
   }
 
-  const cached = cache.get(url+'')
+  const cached = memCache.get(url + '')
   if (cached)
     return cached
 
-  const [buffer, result] = await new Promise<[Buffer, IncomingMessage]>(resolve => {
-    get(url, (res) => {
-
-      if (res.statusCode !== 200)
-        throw new SignatureValidationError(`Request http status: ${res.statusCode} ${res.statusMessage}`)
-
-      let chunks:any[] = []
-
-      res.on('data', chunk => chunks.push(chunk) )
-      res.on('end', () => resolve([
-        Buffer.concat(chunks), res]
-      ))
+  const res = await fetch(url)
+    .catch(err => {
+      throw new SignatureValidationError(`getAppleCertificate: ${err.message}`)
     })
-    .on('error', (e) => {
-      throw new SignatureValidationError(`getAppleCertificate: ${e.message}`)
-    })
-  })
+
+  if (res.status !== 200)
+    throw new SignatureValidationError(`getAppleCertificate: ${res.status} ${res.statusText}`)
+
+  const buffer: Buffer = await res.buffer()
+  if (buffer.length === 0)
+    throw new SignatureValidationError(`Empty response from ${url} - ${res.status} ${res.statusText}`)
+
   const b64 = buffer.toString('base64')
   const publicKey = convertX509CertToPEM(b64)
 
-  if (result.headers['cache-control']) {
+  const cacheHeader = res.headers.get('cache-control')
+  if (cacheHeader) {
     // if there's a cache-control header
-    const expireSec = result.headers['cache-control'].match(/max-age=([0-9]+)/)
+    const maxAgeSec = cacheHeader.match(/max-age=([0-9]+)/)
     // console.log(expireSec)
-    const parsed = (typeof expireSec?.[1] === 'string') ? parseInt(expireSec[1], 10) * 1000 : 0
+    const parsed = (typeof maxAgeSec?.[1] === 'string') ? parseInt(maxAgeSec[1], 10) * 1000 : 0
     // check parsed for falsy value, eg. null or zero
     if (parsed > 0) {
       // if we got max-age
-      cache.set(url.toString(), publicKey) //[url] = publicKey // save in cache
+      memCache.set(url.toString(), publicKey)
       // we'll expire the cache entry later, as per max-age
-      setTimeout(() => cache.delete(url.toString()), parsed).unref()
+      setTimeout(() => memCache.delete(url.toString()), parsed).unref()
     }
   }
 
@@ -104,7 +99,7 @@ export function verifySignature (publicKey: string, idToken: tokenInput) {
   return verifier.verify(publicKey, idToken.signature, 'base64')
 }
 
-export async function verify (idToken: tokenInput):Promise<boolean> {
+export async function verify (idToken: tokenInput): Promise<boolean> {
   const url = new URL(idToken.publicKeyUrl)
   const publicKey = await getAppleCertificate(url)
   return verifySignature(publicKey, idToken)
