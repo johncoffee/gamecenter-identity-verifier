@@ -46,8 +46,9 @@ async function getAppleCertificate(url) {
     if (cacheHeader) {
         // if there's a cache-control header
         const maxAgeSec = cacheHeader.match(/max-age=([0-9]+)/);
-        // console.log(expireSec)
-        const parsed = (typeof maxAgeSec?.[1] === 'string') ? parseInt(maxAgeSec[1], 10) * 1000 : 0;
+        // subtract a margin of 5s from max Age
+        const marginMs = 5000;
+        const parsed = (typeof maxAgeSec?.[1] === 'string') ? parseInt(maxAgeSec[1], 10) * 1000 - marginMs : 0;
         // check parsed for falsy value, eg. null or zero
         if (parsed > 0) {
             // if we got max-age
