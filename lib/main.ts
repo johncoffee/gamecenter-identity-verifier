@@ -1,4 +1,5 @@
 import { createVerify } from 'crypto'
+import type { Response } from 'node-fetch'
 import fetch from 'node-fetch'
 
 export type tokenInput = {
@@ -28,34 +29,13 @@ export function convertX509CertToPEM (base64: string) {
   return pemPreFix + certBody + pemPostFix
 }
 
-export async function getAppleCertificate (url: URL): Promise<string> {
-  if (!url.host.endsWith('.apple.com')) {
-    throw new SignatureValidationError('Invalid publicKeyUrl: host should be apple.com')
-  }
-  if (url.protocol !== 'https:') {
-    throw new SignatureValidationError(
-      'Invalid publicKeyUrl: should use https'
-    )
-  }
-
-  const cached = memCache.get(url + '')
+export async function getCertificateCached (url: URL): Promise<string> {
+  const cacheKey = url.toString()
+  const cached = memCache.get(cacheKey)
   if (cached)
     return cached
 
-  const res = await fetch(url)
-    .catch(err => {
-      throw new SignatureValidationError(`getAppleCertificate: ${err.message}`)
-    })
-
-  if (res.status !== 200)
-    throw new SignatureValidationError(`getAppleCertificate: ${res.status} ${res.statusText}`)
-
-  const buffer: Buffer = await res.buffer()
-  if (buffer.length === 0)
-    throw new SignatureValidationError(`Empty response from ${url} - ${res.status} ${res.statusText}`)
-
-  const b64 = buffer.toString('base64')
-  const publicKey = convertX509CertToPEM(b64)
+  const [publicKey, res] = await fetchPemFromUrl(url)
 
   const cacheHeader = res.headers.get('cache-control')
   if (cacheHeader) {
@@ -68,13 +48,31 @@ export async function getAppleCertificate (url: URL): Promise<string> {
     // check parsed for falsy value, eg. null or zero
     if (parsed > 0) {
       // if we got max-age
-      memCache.set(url.toString(), publicKey)
+      memCache.set(cacheKey, publicKey)
       // we'll expire the cache entry later, as per max-age
-      setTimeout(() => memCache.delete(url.toString()), parsed).unref()
+      setTimeout(() => memCache.delete(cacheKey), parsed).unref()
     }
   }
 
   return publicKey
+}
+
+export async function fetchPemFromUrl (url: URL): Promise<[string, Response]> {
+  const res = await fetch(url).catch(err => {
+      throw new SignatureValidationError(`fetchPemFromUrl: ${err.message}`)
+    })
+
+  if (res.status !== 200)
+    throw new SignatureValidationError(`fetchPemFromUrl: ${res.status} ${res.statusText}`)
+
+  const buffer: Buffer = await res.buffer()
+  if (buffer.length === 0)
+    throw new SignatureValidationError(`fetchPemFromUrl: Empty response from ${url} - ${res.status} ${res.statusText}`)
+
+  const b64 = buffer.toString('base64')
+  const publicKey = convertX509CertToPEM(b64)
+
+  return [publicKey, res]
 }
 
 export function convertTimestampToBigEndian (timestamp: number) {
@@ -103,7 +101,17 @@ export function verifySignature (publicKey: string, idToken: tokenInput) {
 
 export async function verify (idToken: tokenInput): Promise<boolean> {
   const url = new URL(idToken.publicKeyUrl)
-  const publicKey = await getAppleCertificate(url)
+
+  if (!url.host.endsWith('.apple.com')) {
+    throw new SignatureValidationError('Invalid publicKeyUrl: host should be apple.com')
+  }
+  if (url.protocol !== 'https:') {
+    throw new SignatureValidationError(
+      'Invalid publicKeyUrl: should use https'
+    )
+  }
+
+  const publicKey = await getCertificateCached(url)
   return verifySignature(publicKey, idToken)
 }
 

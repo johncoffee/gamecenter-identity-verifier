@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verify = exports.verifySignature = exports.convertTimestampToBigEndian = exports.getAppleCertificate = exports.convertX509CertToPEM = exports.SignatureValidationError = void 0;
+exports.verify = exports.verifySignature = exports.convertTimestampToBigEndian = exports.fetchPemFromUrl = exports.getCertificateCached = exports.convertX509CertToPEM = exports.SignatureValidationError = void 0;
 const crypto_1 = require("crypto");
 const node_fetch_1 = __importDefault(require("node-fetch"));
 const memCache = new Map();
@@ -21,27 +21,12 @@ function convertX509CertToPEM(base64) {
     return pemPreFix + certBody + pemPostFix;
 }
 exports.convertX509CertToPEM = convertX509CertToPEM;
-async function getAppleCertificate(url) {
-    if (!url.host.endsWith('.apple.com')) {
-        throw new SignatureValidationError('Invalid publicKeyUrl: host should be apple.com');
-    }
-    if (url.protocol !== 'https:') {
-        throw new SignatureValidationError('Invalid publicKeyUrl: should use https');
-    }
-    const cached = memCache.get(url + '');
+async function getCertificateCached(url) {
+    const cacheKey = url.toString();
+    const cached = memCache.get(cacheKey);
     if (cached)
         return cached;
-    const res = await (0, node_fetch_1.default)(url)
-        .catch(err => {
-        throw new SignatureValidationError(`getAppleCertificate: ${err.message}`);
-    });
-    if (res.status !== 200)
-        throw new SignatureValidationError(`getAppleCertificate: ${res.status} ${res.statusText}`);
-    const buffer = await res.buffer();
-    if (buffer.length === 0)
-        throw new SignatureValidationError(`Empty response from ${url} - ${res.status} ${res.statusText}`);
-    const b64 = buffer.toString('base64');
-    const publicKey = convertX509CertToPEM(b64);
+    const [publicKey, res] = await fetchPemFromUrl(url);
     const cacheHeader = res.headers.get('cache-control');
     if (cacheHeader) {
         // if there's a cache-control header
@@ -52,14 +37,28 @@ async function getAppleCertificate(url) {
         // check parsed for falsy value, eg. null or zero
         if (parsed > 0) {
             // if we got max-age
-            memCache.set(url.toString(), publicKey);
+            memCache.set(cacheKey, publicKey);
             // we'll expire the cache entry later, as per max-age
-            setTimeout(() => memCache.delete(url.toString()), parsed).unref();
+            setTimeout(() => memCache.delete(cacheKey), parsed).unref();
         }
     }
     return publicKey;
 }
-exports.getAppleCertificate = getAppleCertificate;
+exports.getCertificateCached = getCertificateCached;
+async function fetchPemFromUrl(url) {
+    const res = await (0, node_fetch_1.default)(url).catch(err => {
+        throw new SignatureValidationError(`fetchPemFromUrl: ${err.message}`);
+    });
+    if (res.status !== 200)
+        throw new SignatureValidationError(`fetchPemFromUrl: ${res.status} ${res.statusText}`);
+    const buffer = await res.buffer();
+    if (buffer.length === 0)
+        throw new SignatureValidationError(`fetchPemFromUrl: Empty response from ${url} - ${res.status} ${res.statusText}`);
+    const b64 = buffer.toString('base64');
+    const publicKey = convertX509CertToPEM(b64);
+    return [publicKey, res];
+}
+exports.fetchPemFromUrl = fetchPemFromUrl;
 function convertTimestampToBigEndian(timestamp) {
     // The timestamp parameter in Big-Endian UInt-64 format
     const buffer = Buffer.alloc(8);
@@ -82,7 +81,13 @@ function verifySignature(publicKey, idToken) {
 exports.verifySignature = verifySignature;
 async function verify(idToken) {
     const url = new URL(idToken.publicKeyUrl);
-    const publicKey = await getAppleCertificate(url);
+    if (!url.host.endsWith('.apple.com')) {
+        throw new SignatureValidationError('Invalid publicKeyUrl: host should be apple.com');
+    }
+    if (url.protocol !== 'https:') {
+        throw new SignatureValidationError('Invalid publicKeyUrl: should use https');
+    }
+    const publicKey = await getCertificateCached(url);
     return verifySignature(publicKey, idToken);
 }
 exports.verify = verify;
