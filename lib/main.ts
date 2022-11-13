@@ -1,6 +1,4 @@
 import { createVerify } from 'crypto'
-import type { Response } from 'node-fetch'
-import fetch from 'node-fetch'
 
 export type tokenInput = {
   publicKeyUrl: string,
@@ -58,18 +56,15 @@ export async function getCertificateCached (url: URL): Promise<string> {
 }
 
 export async function fetchPemFromUrl (url: URL): Promise<[string, Response]> {
-  const res = await fetch(url).catch(err => {
+  const res = await fetch(url+'').catch(err => {
       throw new SignatureValidationError(`fetchPemFromUrl: ${err.message}`)
     })
 
   if (res.status !== 200)
     throw new SignatureValidationError(`fetchPemFromUrl: ${res.status} ${res.statusText}`)
 
-  const buffer: Buffer = await res.buffer()
-  if (buffer.length === 0)
-    throw new SignatureValidationError(`fetchPemFromUrl: Empty response from ${url} - ${res.status} ${res.statusText}`)
-
-  const b64 = buffer.toString('base64')
+  const buffer = await res.arrayBuffer()
+  const b64 = Buffer.from(buffer).toString('base64')
   const publicKey = convertX509CertToPEM(b64)
 
   return [publicKey, res]
