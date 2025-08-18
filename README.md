@@ -1,6 +1,14 @@
 ![CircleCI](https://circleci.com/gh/johncoffee/node-gamecenter-identity-verifier.svg?style=svg)
 
-# node-gamecenter-identity-verifier
+
+## Features of this module
+
+- Zero dependencies
+- tested
+- written in typescript 
+- exporting both ESM and commonjs
+
+# gamecenter-identity-verifier
 
 This is library to validate a apple's gamecenter identity of localplayer for consuming it in [node.js][node] backend server.
 
@@ -12,56 +20,32 @@ npm install gamecenter-identity-verifier --save
 
 ## Usage
 
-```js
-var verifier = require('gamecenter-identity-verifier');
+```ts
 
 // identity from client.
 // Reference:  https://developer.apple.com/library/ios/documentation/GameKit/Reference/GKLocalPlayer_Ref/index.html#//apple_ref/occ/instm/GKLocalPlayer/generateIdentityVerificationSignatureWithCompletionHandler
 
-var identity = {
+const identity = {
   publicKeyUrl: 'https://valid.apple.com/public/timeout.cer',
   timestamp: 1460981421303,
   signature: 'PoDwf39DCN464B49jJCU0d9Y0J',
   salt: 'saltST==',
   playerId: 'G:1111111',
   bundleId: 'com.valid.app'
-};
+}
 
-verifier.verify(identity, function (err, token) {
-  if (!err) {
-    // use token in here.
-    console.log(token);
-  }
-});
+assertValid(identity)
+
+await verify(identity)
 ```
 
-## Tests
-
-```bash
-npm test
-```
-or
-```bash
-npm prepare
-```
-
-## Contributing
-
-In lieu of a formal styleguide, take care to maintain the existing coding style.
-Add unit tests for any new or changed functionality. Lint and test your code.
 
 ## Inspired by
 
+* build commonsJS and ESModules from Typescript https://blog.mastykarz.nl/create-npm-package-commonjs-esm-typescript/
 * apple's api document - https://developer.apple.com/library/ios/documentation/GameKit/Reference/GKLocalPlayer_Ref/index.html#//apple_ref/occ/instm/GKLocalPlayer/generateIdentityVerificationSignatureWithCompletionHandler
 * stackoverflow - http://stackoverflow.com/questions/17408729/how-to-authenticate-the-gklocalplayer-on-my-third-party-server
 
-## Release History
+# TypeScript
 
-* 0.1.1 Fix bug in convert method for timestamp to UInt64BE
-* 0.1.0 Initial release
-
-[travisimg]: https://travis-ci.org/maeltm/node-gamecenter-identity-verifier.svg?branch=master
-[travis]: https://travis-ci.org/maeltm/node-gamecenter-identity-verifier
-[coverallsimg]: https://coveralls.io/repos/maeltm/node-gamecenter-identity-verifier/badge.svg?branch=master&service=github
-[coveralls]: https://coveralls.io/github/maeltm/node-gamecenter-identity-verifier?branch=master
-[node]: http://nodejs.org/
+https://devblogs.microsoft.com/typescript/announcing-typescript-5-8-beta/#the---erasablesyntaxonly-option
