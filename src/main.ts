@@ -19,13 +19,13 @@ export function convertX509CertToPEM (X509Cert:string) {
   const pemPostFix = '-----END CERTIFICATE-----'
 
   const base64 = X509Cert
-  const certBody:null|string = base64.match(/.{0,64}/g)?.join('\n')
+  const certBody = base64.match(/.{0,64}/g)?.join('\n')
 
   return pemPreFix + certBody + pemPostFix
 }
 
 export async function getHttpCached(url:string):Promise<string> {
-  if (cache[url]?.expires > Date.now())
+  if (cache[url] && cache[url].expires > Date.now())
     return cache[url].data
 
   return new Promise<string>((resolve, reject) =>

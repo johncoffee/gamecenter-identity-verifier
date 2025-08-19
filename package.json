@@ -8,7 +8,7 @@
     "url": "git+https://github.com/maeltm/node-gamecenter-identity-verifier.git"
   },
   "scripts": {
-    "test": "node --test test/**/*.test.ts"
+    "test": "node --test --import nock test/**/*.test.ts"
   },
   "keywords": [
     "apple",
@@ -23,6 +23,7 @@
     "@types/node": "*"
   },
   "devDependencies": {
+    "nock": "^14.0.10",
     "typescript": "^5.9.2"
   }
 }
