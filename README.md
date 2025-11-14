@@ -1,4 +1,4 @@
-![CircleCI](https://circleci.com/gh/johncoffee/node-gamecenter-identity-verifier.svg?style=svg)
+![CircleCI](https://circleci.com/gh/johncoffee/gamecenter-identity-verifier.svg?style=svg)
 
 # gamecenter-identity-verifier
 
@@ -45,14 +45,27 @@ assertValid(identity)
 await verify(identity)
 ```
 
+# Development
+
+`tsc`
+
 ------------------------
 
-## Inspired by
+## Wishlist
+
+1. Explicitly test and support various runtimes & versions
+
+
+-----------------------
+
+## Inspired by / links
 
 * build commonsJS and ESModules from Typescript https://blog.mastykarz.nl/create-npm-package-commonjs-esm-typescript/
 * apple's api document - https://developer.apple.com/library/ios/documentation/GameKit/Reference/GKLocalPlayer_Ref/index.html#//apple_ref/occ/instm/GKLocalPlayer/generateIdentityVerificationSignatureWithCompletionHandler
 * stackoverflow - http://stackoverflow.com/questions/17408729/how-to-authenticate-the-gklocalplayer-on-my-third-party-server
 
-# TypeScript
+## TypeScript
+
+The distributed code contain typings.
 
 https://devblogs.microsoft.com/typescript/announcing-typescript-5-8-beta/#the---erasablesyntaxonly-option
