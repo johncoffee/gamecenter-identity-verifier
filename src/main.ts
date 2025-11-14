@@ -12,7 +12,7 @@ export type idToken = {
 }
 
 type cacheEntry = {data: string, expires: number}
-const cache:NodeJS.Dict<cacheEntry> = {} // (publicKey -> cert) cache
+export const _cache:NodeJS.Dict<cacheEntry> = {} // (publicKey -> cert) cache
 
 export function convertX509CertToPEM (X509Cert:string) {
   const pemPreFix = '-----BEGIN CERTIFICATE-----\n'
@@ -25,8 +25,8 @@ export function convertX509CertToPEM (X509Cert:string) {
 }
 
 export async function getHttpCached(url:string):Promise<string> {
-  if (cache[url] && cache[url].expires > Date.now())
-    return cache[url].data
+  if (_cache[url] && _cache[url].expires > Date.now())
+    return _cache[url].data
 
   return new Promise<string>((resolve, reject) =>
     get(url, (res) => {
@@ -34,17 +34,16 @@ export async function getHttpCached(url:string):Promise<string> {
         return reject(new Error(`getHttpCached: ${url} responded ${res.statusCode}, expected 200.`))
       }
 
-      const httpMaxAgeMs = parseInt(res.headers['cache-control']?.match(/max-age=([0-9]+)/)?.[1] as string) * 1000
-
+      const httpMaxAgeMs = (parseInt(res.headers['cache-control']?.match(/max-age=([0-9]+)/)?.[1] as string) * 1000) || 0
       const cacheEntry:cacheEntry = {
         data: '',
         expires: Date.now() + httpMaxAgeMs
       }
 
       res.on('error', reject)
-        .on('data', (chunk) => (cacheEntry.data += chunk.toString('base64')))
+        .on('data', chunk => cacheEntry.data += chunk.toString('base64'))
         .on('end', () => {
-          cache[url] = cacheEntry
+          _cache[url] = cacheEntry
           resolve(cacheEntry.data)
         })
     })
