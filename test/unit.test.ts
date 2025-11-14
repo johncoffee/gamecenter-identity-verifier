@@ -1,9 +1,10 @@
 import nock from 'nock'
-import { beforeEach, describe, it } from 'node:test'
-import { assertValid, convertTimestampToBigEndian, convertX509CertToPEM, verify } from '../src/main.ts'
+import { describe, it } from 'node:test'
+import { _cache, assertValid, convertTimestampToBigEndian, convertX509CertToPEM, verify } from '../src/main.ts'
 import { ok } from 'node:assert'
 import { equal, fail } from 'node:assert/strict'
-import { mockToken, pkPath, addSignature, privateKey, } from './helpers.ts'
+import { mockToken, pkPath, } from './helpers.ts'
+import { randomBytes } from 'node:crypto'
 
 describe('assertions in runtime', () => {
   it('should fail if domain is not apple', function () {
@@ -21,13 +22,11 @@ describe('assertions in runtime', () => {
 })
 
 describe('http mocked', () => {
-  beforeEach( () => {
+  it('should succeed to verify apple game center identity', async function () {
     nock('https://valid.apple.com')
       .get('/public/public.cer')
       .replyWithFile(200, pkPath)
-  })
 
-  it('should succeed to verify apple game center identity', async function () {
     const token = mockToken()
     const isValid = await verify(token)
     equal(isValid, true)
@@ -50,10 +49,10 @@ describe('http mocked', () => {
       })
   });
 
-  it('should fail on not-200', async function () {
+  it('should fail on none-200 responses', async function () {
     nock('https://valid.apple.com')
       .get('/badrequest')
-      .replyWithFile(404, pkPath)
+      .reply(404, '')
 
     const token = mockToken()
     token.publicKey = 'https://valid.apple.com/badrequest'
@@ -66,17 +65,39 @@ describe('http mocked', () => {
       })
   });
 
+  it('should set caching by max-age', async function () {
+    const t0 = Date.now()
+    const maxAge = 300
+    nock('https://valid.apple.com')
+      .get('/public/public.cer')
+      .replyWithFile(200, pkPath, {
+        'Cache-Control': 'max-age='+maxAge
+      })
+
+    await verify(mockToken())
+    const key = 'https://valid.apple.com/public/public.cer'
+    ok(_cache[key]!.expires > t0)
+    ok(_cache[key]!.expires < Date.now() + (maxAge*1000))
+
+  });
+
   // test http max-age logic
 })
 
 describe('happy paths', () => {
   it('should convert to PEM', function () {
-    const pemPreFix = '-----BEGIN CERTIFICATE-----\n'
-    const pemPostFix = '-----END CERTIFICATE-----'
+    const b64 = randomBytes(100).toString('base64')
+    const pem = convertX509CertToPEM(b64)
 
-    const pem = convertX509CertToPEM("A".repeat(64))
-    pem.startsWith(pemPreFix)
-    pem.endsWith(pemPostFix)
+    const pemPreFix = '-----BEGIN CERTIFICATE-----'
+    const pemPostFix = '-----END CERTIFICATE-----'
+    ok(pem.startsWith(pemPreFix))
+    ok(pem.endsWith(pemPostFix))
+    const extractedB64 = pem
+      .replace(pemPreFix, '')
+      .replace(pemPostFix,'')
+      .replace(/\s+/g, '')
+    equal(extractedB64, b64)
   })
 
   it('converts number with convertTimestampToBigEndian', function () {
