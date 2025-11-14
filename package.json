@@ -2,7 +2,7 @@
   "name": "gamecenter-identity-verifier",
   "version": "1.0.0-rc.1",
   "description": "A small library to verify the identity of apple-gamecenter's local player for consuming it in node.js backend server. A rewrite to typescript of maeltm/node-gamecenter-identity-verifier",
-  "main": "src/main.ts",
+  "main": "dist/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/maeltm/node-gamecenter-identity-verifier.git"
@@ -28,5 +28,6 @@
   "devDependencies": {
     "nock": "^14.0.10",
     "typescript": "^5.9.2"
-  }
+  },
+  "files": ["dist"]
 }
