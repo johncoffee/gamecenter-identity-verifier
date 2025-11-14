@@ -8,7 +8,10 @@
     "url": "git+https://github.com/maeltm/node-gamecenter-identity-verifier.git"
   },
   "scripts": {
-    "test": "node --test --import nock test/**/*.test.ts"
+    "test": "node --test --import nock test/**/*.test.ts",
+    "build": "npm run build:cjs && npm run build:esm",
+    "build:cjs": "tsc -p tsconfig-commonjs.json",
+    "build:esm": "tsc -p tsconfig-esmodule.json"
   },
   "keywords": [
     "apple",
