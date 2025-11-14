@@ -1,26 +1,32 @@
 ![CircleCI](https://circleci.com/gh/johncoffee/node-gamecenter-identity-verifier.svg?style=svg)
 
-
-## Features of this module
-
-- Zero dependencies
-- tested
-- written in typescript 
-- exporting both ESM and commonjs
-
 # gamecenter-identity-verifier
 
 This is library to validate a apple's gamecenter identity of localplayer for consuming it in [node.js][node] backend server.
 
+### Features
+
+- Zero dependencies
+- Exporting both ESM and CommonJS
+- Testet
+- Caching
+
+## Changes
+
+2.0  
+- rewrite in Typescript
+
+
 ## Installation
 
-```bash
-npm install gamecenter-identity-verifier --save
+```shell
+npm install gamecenter-identity-verifier
 ```
 
 ## Usage
 
-```ts
+```typescript
+import { assertValid, verify } from 'gamecenter-identity-verifier'
 
 // identity from client.
 // Reference:  https://developer.apple.com/library/ios/documentation/GameKit/Reference/GKLocalPlayer_Ref/index.html#//apple_ref/occ/instm/GKLocalPlayer/generateIdentityVerificationSignatureWithCompletionHandler
@@ -39,6 +45,7 @@ assertValid(identity)
 await verify(identity)
 ```
 
+------------------------
 
 ## Inspired by
 
