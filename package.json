@@ -33,12 +33,12 @@
   "author": "johncoffee",
   "license": "Apache-2.0",
   "peerDependencies": {
-    "@types/node": "*"
+    "@types/node": "*",
+    "typescript": "^5.9.3"
   },
   "devDependencies": {
     "nock": "^14.0.10",
-    "rimraf": "^6.1.0",
-    "typescript": "^5.9.3"
+    "rimraf": "^6.1.0"
   },
   "files": [
     "dist"
