@@ -6,6 +6,7 @@
     ],
     "strict": true,
     "declaration": true,
+    "declarationDir": "./dist/types",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "moduleResolution": "node",

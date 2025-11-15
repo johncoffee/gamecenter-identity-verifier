@@ -1,8 +1,16 @@
 {
-  "name": "gamecenter-identity-verifier",
+  "name": "gamecenter-identity-verifier-js",
   "version": "1.0.0-rc.1",
   "description": "A small library to verify the identity of apple-gamecenter's local player for consuming it in node.js backend server. A rewrite to typescript of maeltm/node-gamecenter-identity-verifier",
-  "main": "dist/",
+  "main": "dist/cjs/main.js",
+  "module": "dist/esm/main.mjs",
+  "types": "dist/types",
+  "exports": {
+    ".": {
+      "require": "./dist/cjs/main.js",
+      "import": "./dist/esm/main.mjs"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/maeltm/node-gamecenter-identity-verifier.git"
@@ -11,7 +19,10 @@
     "test": "node --test --import nock test/**/*.test.ts",
     "build": "npm run build:cjs && npm run build:esm",
     "build:cjs": "tsc -p tsconfig-commonjs.json",
-    "build:esm": "tsc -p tsconfig-esmodule.json"
+    "build:esm": "tsc -p tsconfig-esmodule.json",
+    "postbuild:esm": "./rename-to-mjs.sh",
+    "prepack": "npm run clean && npm run build",
+    "clean": "rimraf dist"
   },
   "keywords": [
     "apple",
@@ -21,13 +32,15 @@
   ],
   "author": "johncoffee",
   "license": "Apache-2.0",
-  "type": "module",
   "peerDependencies": {
     "@types/node": "*"
   },
   "devDependencies": {
     "nock": "^14.0.10",
-    "typescript": "^5.9.2"
+    "rimraf": "^6.1.0",
+    "typescript": "^5.9.3"
   },
-  "files": ["dist"]
+  "files": [
+    "dist"
+  ]
 }

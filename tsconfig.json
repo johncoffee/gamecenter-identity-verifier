@@ -5,7 +5,7 @@
     "noEmit": true,
     "allowImportingTsExtensions": true, // Import .ts files directly
     "rewriteRelativeImportExtensions": true, // Dont convert .ts imports to .js in output
-    "verbatimModuleSyntax": true, // Enforce use of 'import type' for type-only imports
+    "verbatimModuleSyntax": false, // Enforce use of 'import type' for type-only imports
     "erasableSyntaxOnly": true, // Warns on unsupported TS features (like enums, namespaces, etc.)
     "strict": true
   }
