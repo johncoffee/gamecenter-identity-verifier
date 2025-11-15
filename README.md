@@ -13,9 +13,18 @@ This is library to validate a apple's gamecenter identity of localplayer for con
 
 ## Changes
 
-2.0  
-- rewrite in Typescript
+**1.0**
 
+- rewrite in Typescript
+- support both CommonJS and ESModules
+- develop without `ts-node`
+
+### Release plan
+
+Release v1.0 with both esm and cjs, then create v2.0 that removes cjs, while maintaining a release branch for v1.x. Is this a good idea?
+
+Be conservative with node version support in the the cjs build.   
+Be optimistic with node/JS feature usage in the the mjs build. 
 
 ## Installation
 
@@ -47,7 +56,9 @@ await verify(identity)
 
 # Development
 
-`tsc`
+The [tsconfig.json](tsconfig.json) is fitted for developing without `ts-node`, but
+using Node's support for TypeScript (strip-types).
+
 
 ------------------------
 
