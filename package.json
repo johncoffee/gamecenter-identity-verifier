@@ -1,6 +1,6 @@
 {
   "name": "gamecenter-identity-verifier-js",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "description": "A small library to verify the identity of apple-gamecenter's local player for consuming it in node.js backend server. A rewrite to typescript of maeltm/node-gamecenter-identity-verifier",
   "main": "dist/cjs/main.js",
   "module": "dist/esm/main.mjs",
